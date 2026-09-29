@@ -1,0 +1,2913 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת WMS למחסן - עם תמונות, הערות וייצוא ל-Excel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --gray-color: #95a5a6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            direction: rtl;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* סרגל ניווט צדדי */
+        .sidebar {
+            width: 250px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            transition: all 0.3s;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        .logo {
+            text-align: center;
+            padding: 20px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            color: white;
+            margin-bottom: 5px;
+        }
+        
+        .logo span {
+            color: var(--secondary-color);
+        }
+        
+        .logo p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .nav-menu {
+            list-style: none;
+        }
+        
+        .nav-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s;
+            border-right: 4px solid transparent;
+        }
+        
+        .nav-menu a:hover, .nav-menu a.active {
+            background-color: rgba(255,255,255,0.1);
+            border-right-color: var(--secondary-color);
+        }
+        
+        .nav-menu i {
+            margin-left: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* תוכן ראשי */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        
+        .header h2 {
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .user-info span {
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        
+        .content {
+            padding: 30px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        /* כרטיסיות דשבורד */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-top: 4px solid var(--secondary-color);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card h3 i {
+            margin-left: 10px;
+            color: var(--secondary-color);
+        }
+        
+        .card .value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+        
+        .card .change {
+            font-size: 14px;
+            color: var(--gray-color);
+        }
+        
+        .card .change.positive {
+            color: var(--success-color);
+        }
+        
+        .card .change.negative {
+            color: var(--accent-color);
+        }
+        
+        /* סעיפים */
+        .section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section-header h3 {
+            color: var(--primary-color);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-header h3 i {
+            margin-left: 10px;
+            color: var(--secondary-color);
+        }
+        
+        /* טבלאות */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-align: right;
+            padding: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        
+        table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .status.pending {
+            background-color: #fff4e6;
+            color: #f39c12;
+        }
+        
+        .status.completed {
+            background-color: #d5f4e6;
+            color: #27ae60;
+        }
+        
+        .status.in-progress {
+            background-color: #e8f4fc;
+            color: #3498db;
+        }
+        
+        /* כפתורים */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-info {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-excel {
+            background-color: #1d6f42;
+        }
+        
+        .btn-excel:hover {
+            background-color: #155d35;
+        }
+        
+        /* טופס */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        /* מודל */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h3 {
+            color: var(--primary-color);
+            font-size: 22px;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-color);
+        }
+        
+        .close-modal:hover {
+            color: var(--accent-color);
+        }
+        
+        /* התאמה למובייל */
+        @media (max-width: 992px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding: 10px 0;
+            }
+            
+            .nav-menu {
+                display: flex;
+                overflow-x: auto;
+                padding: 0 10px;
+            }
+            
+            .nav-menu li {
+                flex: 0 0 auto;
+                margin-bottom: 0;
+            }
+            
+            .nav-menu a {
+                padding: 15px;
+                border-right: none;
+                border-bottom: 4px solid transparent;
+            }
+            
+            .nav-menu a:hover, .nav-menu a.active {
+                border-right-color: transparent;
+                border-bottom-color: var(--secondary-color);
+            }
+            
+            .dashboard-cards {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .item-image {
+                width: 40px !important;
+                height: 40px !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-controls {
+                margin-top: 15px;
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+        
+        /* אנימציות */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* הודעות */
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-info {
+            background-color: #e8f4fc;
+            color: #3498db;
+            border-right: 4px solid #3498db;
+        }
+        
+        .alert-warning {
+            background-color: #fff4e6;
+            color: #f39c12;
+            border-right: 4px solid #f39c12;
+        }
+        
+        .alert-success {
+            background-color: #d5f4e6;
+            color: #27ae60;
+            border-right: 4px solid #27ae60;
+        }
+        
+        .alert i {
+            margin-left: 10px;
+            font-size: 20px;
+        }
+        
+        /* תמונות פריטים */
+        .item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .item-image:hover {
+            transform: scale(1.1);
+        }
+        
+        .image-upload {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .image-upload:hover {
+            border-color: #3498db;
+        }
+        
+        .image-upload i {
+            font-size: 48px;
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+        
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        
+        /* הערות */
+        .notes-preview {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .notes-preview:hover {
+            color: #3498db;
+        }
+        
+        /* שדות טופס בשורה */
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        /* הודעת אישור */
+        .confirm-box {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .confirm-box p {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .confirm-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        /* פעולות בטבלה */
+        .table-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        /* שדה חיפוש */
+        .search-box {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-color);
+        }
+        
+        /* הגדרות מנהל */
+        .manager-settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .manager-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #9b59b6;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        /* ייצוא Excel */
+        .export-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        /* תצוגת תמונה מוגדלת */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .image-modal-content img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        
+        .close-image-modal {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+        
+        /* קטגוריות צבעוניות */
+        .category-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .category-electronics {
+            background-color: #3498db;
+        }
+        
+        .category-tools {
+            background-color: #e74c3c;
+        }
+        
+        .category-building {
+            background-color: #f39c12;
+        }
+        
+        .category-toys {
+            background-color: #9b59b6;
+        }
+        
+        .category-clothing {
+            background-color: #2ecc71;
+        }
+        
+        .category-spare-parts {
+            background-color: #1abc9c;
+        }
+        
+        /* חלקי חילוף */
+        .spare-parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .spare-part-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-top: 4px solid #1abc9c;
+            transition: transform 0.3s;
+        }
+        
+        .spare-part-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .spare-part-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- סרגל צדדי -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h1>מערכת <span>Mantis WMS</span></h1>
+                <p>ניהול מחסן עם תמונות והערות</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> דשבורד</a></li>
+                <li><a href="#" data-page="inventory"><i class="fas fa-boxes"></i> ניהול מלאי</a></li>
+                <li><a href="#" data-page="spare-parts"><i class="fas fa-cogs"></i> חלקי חילוף</a></li>
+                <li><a href="#" data-page="orders"><i class="fas fa-shopping-cart"></i> הזמנות מכר</a></li>
+                <li><a href="#" data-page="suppliers"><i class="fas fa-truck"></i> ניהול ספקים</a></li>
+                <li><a href="#" data-page="reports"><i class="fas fa-chart-bar"></i> דו"חות וייצוא</a></li>
+                <li><a href="#" data-page="data-management"><i class="fas fa-database"></i> ניהול נתונים</a></li>
+            </ul>
+            
+            <div style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px;">
+                <button class="btn btn-danger btn-small" onclick="showResetModal()" style="width: 100%; margin-bottom: 10px;">
+                    <i class="fas fa-trash-alt"></i> אפס נתונים
+                </button>
+            </div>
+        </nav>
+        
+        <!-- תוכן ראשי -->
+        <main class="main-content">
+            <!-- כותרת עליונה -->
+            <header class="header">
+                <h2 id="page-title">דשבורד ניהול מחסן</h2>
+                <div class="header-controls">
+                    <button class="btn btn-excel btn-small no-print" onclick="showExportModal()">
+                        <i class="fas fa-file-excel"></i> ייצוא ל-Excel
+                    </button>
+                    <div class="user-info" onclick="showManagerModal()">
+                        <div class="manager-avatar" id="user-avatar">מנהל</div>
+                        <span id="user-name">ברוך חזן, מנהל מחסן</span>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- תוכן הדף -->
+            <div class="content">
+                <!-- דף דשבורד -->
+                <div id="dashboard" class="page active">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>ברוך הבא למערכת ניהול המחסן עם תמונות, הערות וייצוא ל-Excel.</div>
+                    </div>
+                    
+                    <div class="dashboard-cards">
+                        <div class="card">
+                            <h3><i class="fas fa-boxes"></i> פריטים במלאי</h3>
+                            <div class="value" id="inventory-count">0</div>
+                            <div class="change">סה"כ פריטים במערכת</div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><i class="fas fa-cogs"></i> חלקי חילוף</h3>
+                            <div class="value" id="spare-parts-count">0</div>
+                            <div class="change">חלקי חילוף במלאי</div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><i class="fas fa-shopping-cart"></i> הזמנות פעילות</h3>
+                            <div class="value" id="orders-count">0</div>
+                            <div class="change">הזמנות ממתינות לטיפול</div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><i class="fas fa-exclamation-triangle"></i> התראות</h3>
+                            <div class="value" id="alerts-count">0</div>
+                            <div class="change">התראות שצריך לטפל בהן</div>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-chart-line"></i> סטטיסטיקות מהירות</h3>
+                            <button class="btn btn-small btn-success" onclick="exportDashboardToExcel()">
+                                <i class="fas fa-file-excel"></i> ייצוא דשבורד
+                            </button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>קטגוריה</th>
+                                        <th>מספר פריטים</th>
+                                        <th>סה"כ כמות</th>
+                                        <th>ערך משוער</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stats-table-body">
+                                    <!-- סטטיסטיקות יוטענו כאן -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- דף מלאי -->
+                <div id="inventory" class="page hidden">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-boxes"></i> ניהול מלאי עם תמונות והערות</h3>
+                            <div>
+                                <button class="btn btn-excel btn-small no-print" onclick="exportInventoryToExcel()">
+                                    <i class="fas fa-file-excel"></i> ייצוא מלאי
+                                </button>
+                                <button class="btn no-print" onclick="showAddModal('inventory')" style="margin-right: 10px;">
+                                    <i class="fas fa-plus"></i> הוסף פריט חדש
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="quick-actions no-print" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <button class="btn btn-small btn-success" onclick="showAddModal('inventory')">
+                                <i class="fas fa-plus"></i> פריט חדש
+                            </button>
+                            <button class="btn btn-small btn-info" onclick="showBulkUploadModal()">
+                                <i class="fas fa-upload"></i> העלאה מרובה
+                            </button>
+                            <button class="btn btn-small btn-warning" onclick="showImportModal()">
+                                <i class="fas fa-file-import"></i> ייבוא מ-Excel
+                            </button>
+                        </div>
+                        
+                        <div class="search-box no-print">
+                            <input type="text" id="search-inventory" placeholder="חיפוש פריטים...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>תמונה</th>
+                                        <th>קוד פריט</th>
+                                        <th>שם פריט</th>
+                                        <th>קטגוריה</th>
+                                        <th>כמות</th>
+                                        <th>מיקום</th>
+                                        <th>הערות</th>
+                                        <th>סטטוס</th>
+                                        <th class="no-print">פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table-body">
+                                    <!-- פריטי מלאי יוטענו כאן -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- דף חלקי חילוף -->
+                <div id="spare-parts" class="page hidden">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-cogs"></i> ניהול חלקי חילוף</h3>
+                            <div>
+                                <button class="btn btn-excel btn-small no-print" onclick="exportSparePartsToExcel()">
+                                    <i class="fas fa-file-excel"></i> ייצוא חלקים
+                                </button>
+                                <button class="btn no-print" onclick="showAddModal('spare-part')" style="margin-right: 10px;">
+                                    <i class="fas fa-plus"></i> הוסף חלק חדש
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <div>חלקי חילוף הם פריטים מיוחדים הדורשים מעקב מיוחד. ניתן להוסיף תמונות והערות מפורטות.</div>
+                        </div>
+                        
+                        <div class="search-box no-print">
+                            <input type="text" id="search-spare-parts" placeholder="חיפוש חלקי חילוף...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        
+                        <!-- תצוגת רשת -->
+                        <div class="spare-parts-grid" id="spare-parts-grid">
+                            <!-- חלקי חילוף יוצגו כאן -->
+                        </div>
+                        
+                        <!-- תצוגת טבלה -->
+                        <div class="table-container" style="margin-top: 30px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>תמונה</th>
+                                        <th>מספר חלק</th>
+                                        <th>תיאור</th>
+                                        <th>דגם מתאים</th>
+                                        <th>כמות</th>
+                                        <th>מחיר</th>
+                                        <th>הערות</th>
+                                        <th class="no-print">פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="spare-parts-table-body">
+                                    <!-- חלקי חילוף בטבלה -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- דף הזמנות -->
+                <div id="orders" class="page hidden">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-shopping-cart"></i> ניהול הזמנות מכר</h3>
+                            <div>
+                                <button class="btn btn-excel btn-small no-print" onclick="exportOrdersToExcel()">
+                                    <i class="fas fa-file-excel"></i> ייצוא הזמנות
+                                </button>
+                                <button class="btn no-print" onclick="showAddModal('order')" style="margin-right: 10px;">
+                                    <i class="fas fa-plus"></i> הזמנה חדשה
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>מספר הזמנה</th>
+                                        <th>לקוח</th>
+                                        <th>תאריך</th>
+                                        <th>פריטים</th>
+                                        <th>סכום</th>
+                                        <th>סטטוס</th>
+                                        <th>הערות</th>
+                                        <th class="no-print">פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table-body">
+                                    <!-- הזמנות יוטענו כאן -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- דף ספקים -->
+                <div id="suppliers" class="page hidden">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-truck"></i> ניהול ספקים</h3>
+                            <div>
+                                <button class="btn btn-excel btn-small no-print" onclick="exportSuppliersToExcel()">
+                                    <i class="fas fa-file-excel"></i> ייצוא ספקים
+                                </button>
+                                <button class="btn no-print" onclick="showAddModal('supplier')" style="margin-right: 10px;">
+                                    <i class="fas fa-plus"></i> הוסף ספק חדש
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>קוד ספק</th>
+                                        <th>שם ספק</th>
+                                        <th>קטגוריה</th>
+                                        <th>טלפון</th>
+                                        <th>אימייל</th>
+                                        <th>הערות</th>
+                                        <th>סטטוס</th>
+                                        <th class="no-print">פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="suppliers-table-body">
+                                    <!-- ספקים יוטענו כאן -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- דף דו"חות וייצוא -->
+                <div id="reports" class="page hidden">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-file-excel"></i> ייצוא נתונים ל-Excel</h3>
+                            <button class="btn btn-excel" onclick="exportAllToExcel()">
+                                <i class="fas fa-file-export"></i> ייצוא הכל ל-Excel
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <div>הייצוא ל-Excel כולל את כל הנתונים: תמונות (קישורים), הערות, וכל השדות.</div>
+                        </div>
+                        
+                        <div class="export-options">
+                            <div class="card" style="text-align: center; cursor: pointer;" onclick="exportInventoryToExcel()">
+                                <h3><i class="fas fa-boxes"></i> מלאי</h3>
+                                <p>ייצוא כל פריטי המלאי עם תמונות</p>
+                                <button class="btn btn-excel btn-small" style="margin-top: 10px;">
+                                    <i class="fas fa-download"></i> ייצוא מלאי
+                                </button>
+                            </div>
+                            
+                            <div class="card" style="text-align: center; cursor: pointer;" onclick="exportSparePartsToExcel()">
+                                <h3><i class="fas fa-cogs"></i> חלקי חילוף</h3>
+                                <p>ייצוא חלקי חילוף עם תמונות מפורטות</p>
+                                <button class="btn btn-excel btn-small" style="margin-top: 10px;">
+                                    <i class="fas fa-download"></i> ייצוא חלקים
+                                </button>
+                            </div>
+                            
+                            <div class="card" style="text-align: center; cursor: pointer;" onclick="exportOrdersToExcel()">
+                                <h3><i class="fas fa-shopping-cart"></i> הזמנות</h3>
+                                <p>ייצוא היסטוריית הזמנות מלאה</p>
+                                <button class="btn btn-excel btn-small" style="margin-top: 10px;">
+                                    <i class="fas fa-download"></i> ייצוא הזמנות
+                                </button>
+                            </div>
+                            
+                            <div class="card" style="text-align: center; cursor: pointer;" onclick="exportSuppliersToExcel()">
+                                <h3><i class="fas fa-truck"></i> ספקים</h3>
+                                <p>ייצוא רשימת ספקים עם פרטי התקשרות</p>
+                                <button class="btn btn-excel btn-small" style="margin-top: 10px;">
+                                    <i class="fas fa-download"></i> ייצוא ספקים
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="section" style="margin-top: 30px;">
+                            <h4><i class="fas fa-cogs"></i> הגדרות ייצוא מתקדמות</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>פורמט ייצוא:</label>
+                                    <select id="export-format" class="form-control">
+                                        <option value="excel">Excel (.xlsx)</option>
+                                        <option value="csv">CSV (.csv)</option>
+                                        <option value="json">JSON (.json)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>כולל תמונות:</label>
+                                    <select id="include-images" class="form-control">
+                                        <option value="yes">כן (קישורים)</option>
+                                        <option value="no">לא</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>כולל הערות:</label>
+                                    <select id="include-notes" class="form-control">
+                                        <option value="yes">כן</option>
+                                        <option value="no">לא</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn btn-success" onclick="customExport()">
+                                <i class="fas fa-download"></i> ייצוא מותאם אישית
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- דף ניהול נתונים -->
+                <div id="data-management" class="page hidden">
+                    <div class="section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-database"></i> ניהול נתונים וגיבויים</h3>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>מומלץ ליצור גיבוי לפני ביצוע פעולות ניהול נתונים.</div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                            <div class="card" style="text-align: center;">
+                                <h3><i class="fas fa-download"></i> גיבוי נתונים</h3>
+                                <p>יצירת גיבוי מלא של כל הנתונים</p>
+                                <button class="btn btn-success" onclick="createBackup()" style="margin-top: 15px;">
+                                    <i class="fas fa-save"></i> צור גיבוי
+                                </button>
+                            </div>
+                            
+                            <div class="card" style="text-align: center;">
+                                <h3><i class="fas fa-upload"></i> שחזור נתונים</h3>
+                                <p>טעינת נתונים מגיבוי קיים</p>
+                                <div style="margin-top: 15px;">
+                                    <input type="file" id="restore-file" accept=".json" style="display: none;" onchange="handleRestoreFile(this.files)">
+                                    <button class="btn btn-warning" onclick="document.getElementById('restore-file').click()">
+                                        <i class="fas fa-upload"></i> שחזר מגיבוי
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="card" style="text-align: center;">
+                                <h3><i class="fas fa-trash-alt"></i> ניקוי נתונים</h3>
+                                <p>איפוס מלא של כל הנתונים</p>
+                                <button class="btn btn-danger" onclick="showResetModal()" style="margin-top: 15px;">
+                                    <i class="fas fa-broom"></i> אפס כל הנתונים
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- מודל הוספת פריט -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">הוספת פריט חדש</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- התוכן יוטען כאן -->
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל ייצוא -->
+    <div id="export-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ייצוא נתונים ל-Excel</h3>
+                <button class="close-modal" onclick="closeExportModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>בחר סוג נתונים לייצוא:</label>
+                    <select id="export-data-type" class="form-control">
+                        <option value="inventory">מלאי</option>
+                        <option value="spare-parts">חלקי חילוף</option>
+                        <option value="orders">הזמנות</option>
+                        <option value="suppliers">ספקים</option>
+                        <option value="all">הכל ביחד</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>כולל תמונות:</label>
+                    <select id="export-with-images" class="form-control">
+                        <option value="yes">כן (קישורים לתמונות)</option>
+                        <option value="no">לא</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>כולל הערות:</label>
+                    <select id="export-with-notes" class="form-control">
+                        <option value="yes">כן</option>
+                        <option value="no">לא</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>טווח תאריכים (להזמנות):</label>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="date" id="export-date-from" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <input type="date" id="export-date-to" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="confirm-buttons" style="margin-top: 30px;">
+                    <button class="btn btn-excel" onclick="performExport()">
+                        <i class="fas fa-file-excel"></i> ייצוא ל-Excel
+                    </button>
+                    <button class="btn" onclick="closeExportModal()">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל תמונה מוגדלת -->
+    <div id="image-modal" class="image-modal">
+        <span class="close-image-modal" onclick="closeImageModal()">&times;</span>
+        <div class="image-modal-content">
+            <img id="modal-image" src="" alt="תמונה מוגדלת">
+        </div>
+    </div>
+
+    <!-- מודל הערות -->
+    <div id="notes-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="notes-modal-title">הערות לפריט</h3>
+                <button class="close-modal" onclick="closeNotesModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <textarea id="notes-content" class="form-control" rows="10" placeholder="הוסף הערות לפריט..."></textarea>
+                </div>
+                <div class="confirm-buttons">
+                    <button class="btn btn-success" onclick="saveNotes()">שמור הערות</button>
+                    <button class="btn" onclick="closeNotesModal()">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל איפוס -->
+    <div id="reset-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>איפוס נתונים</h3>
+                <button class="close-modal" onclick="closeResetModal()">&times;</button>
+            </div>
+            <div class="confirm-box">
+                <p><i class="fas fa-exclamation-triangle" style="color: #e74c3c; font-size: 48px; margin-bottom: 20px;"></i></p>
+                <p>האם אתה בטוח שברצונך לאפס את כל הנתונים?</p>
+                <p style="color: #e74c3c; font-weight: bold;">פעולה זו תמחק את כל הנתונים ולא תוכל לשחזרם!</p>
+                <div class="confirm-buttons" style="margin-top: 30px;">
+                    <button class="btn btn-danger" onclick="resetAllData()">אפס הכל</button>
+                    <button class="btn" onclick="closeResetModal()">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל מנהל -->
+    <div id="manager-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>שינוי פרטי מנהל</h3>
+                <button class="close-modal" onclick="closeManagerModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label for="manager-name">שם מנהל *</label>
+                    <input type="text" id="manager-name" class="form-control" placeholder="הכנס שם מלא">
+                </div>
+                <div class="form-group">
+                    <label for="manager-title">תפקיד *</label>
+                    <input type="text" id="manager-title" class="form-control" placeholder="הכנס תפקיד">
+                </div>
+                <div class="form-group" style="text-align: left; margin-top: 30px;">
+                    <button class="btn btn-success" onclick="saveManagerSettings()">שמור שינויים</button>
+                    <button class="btn" onclick="closeManagerModal()" style="margin-right: 10px;">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ספרייה לייצוא Excel
+        function loadXLSX() {
+            return new Promise((resolve, reject) => {
+                if (typeof XLSX !== 'undefined') {
+                    resolve(XLSX);
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                script.onload = () => resolve(XLSX);
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // נתוני מערכת
+        let systemData = {
+            inventory: [],
+            spareParts: [],
+            orders: [],
+            suppliers: [],
+            alerts: [],
+            managerSettings: {
+                name: "ברוך חזן",
+                title: "מנהל מחסן",
+                initials: "מנהל"
+            },
+            lastBackup: null
+        };
+
+        // משתנים גלובליים
+        let currentPage = 'dashboard';
+        let currentEditId = null;
+        let currentEditType = null;
+        let currentImage = null;
+        let currentNotesItem = null;
+        let imageCache = {};
+
+        // טעינת נתונים מהזכרון המקומי
+        function loadDataFromStorage() {
+            const savedData = localStorage.getItem('wms_system_data_v2');
+            if (savedData) {
+                try {
+                    systemData = JSON.parse(savedData);
+                    console.log('נתונים נטענו:', systemData);
+                } catch (e) {
+                    console.error('שגיאה בטעינת נתונים:', e);
+                    createSampleData();
+                }
+            } else {
+                createSampleData();
+            }
+            
+            updateManagerDisplay();
+            updateDashboard();
+        }
+
+        // שמירת נתונים
+        function saveDataToStorage() {
+            localStorage.setItem('wms_system_data_v2', JSON.stringify(systemData));
+            console.log('נתונים נשמרו');
+        }
+
+        // יצירת נתוני דוגמה
+        function createSampleData() {
+            systemData = {
+                inventory: [
+                    {
+                        id: 1,
+                        code: "ELEC-001",
+                        name: "מטען סלולרי מהיר",
+                        category: "electronics",
+                        quantity: 42,
+                        location: "מדף A3",
+                        minStock: 10,
+                        price: 89.90,
+                        image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
+                        notes: "מטען מהיר עם טכנולוגיית PD\nמתאים למכשירים מרובים\nאחריות לשנתיים",
+                        status: "במלאי",
+                        lastUpdated: "2023-11-20"
+                    },
+                    {
+                        id: 2,
+                        code: "TOOL-012",
+                        name: "פטיש קל בטונגסטן",
+                        category: "tools",
+                        quantity: 15,
+                        location: "מדף B2",
+                        minStock: 5,
+                        price: 45.50,
+                        image: "https://images.unsplash.com/photo-1581132169645-bbb077dd1d1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
+                        notes: "פטיש קל משקל\nידית אנטי-החלקה\nמתאים לעבודות עץ ומתכת",
+                        status: "רמה נמוכה",
+                        lastUpdated: "2023-11-19"
+                    }
+                ],
+                spareParts: [
+                    {
+                        id: 1,
+                        partNumber: "SP-001",
+                        name: "מנוע חשמלי 12V",
+                        description: "מנוע חשמלי למכונות תעשייתיות",
+                        compatibleModels: "Model X, Model Y, Model Z",
+                        quantity: 8,
+                        price: 450.00,
+                        image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
+                        notes: "מנוע מקורי מיצרן\nמתח עבודה: 12V DC\nהספק: 250W",
+                        status: "במלאי",
+                        lastUpdated: "2023-11-20"
+                    }
+                ],
+                orders: [
+                    {
+                        id: 1,
+                        orderNumber: "ORD-2023-001",
+                        customer: "אביב אלקטרוניקה",
+                        date: "2023-11-20",
+                        items: ["ELEC-001", "ELEC-002"],
+                        totalAmount: 1250.00,
+                        status: "ממתין לליקוט",
+                        notes: "לקוח VIP - לטפל בהקדם",
+                        lastUpdated: "2023-11-20"
+                    }
+                ],
+                suppliers: [
+                    {
+                        id: 1,
+                        code: "SUP-001",
+                        name: "אלקטרו-ספק בע\"מ",
+                        category: "electronics",
+                        phone: "03-1234567",
+                        email: "info@electro-supply.co.il",
+                        address: "תל אביב, רוטשילד 10",
+                        notes: "ספק אמין, משלוחים מהירים\nאחריות על כל המוצרים",
+                        status: "פעיל",
+                        lastUpdated: "2023-11-19"
+                    }
+                ],
+                alerts: [
+                    {
+                        id: 1,
+                        type: "warning",
+                        message: "פריט TOOL-012 ברמת מלאי נמוכה",
+                        date: "2023-11-20",
+                        priority: "high"
+                    }
+                ],
+                managerSettings: systemData.managerSettings,
+                lastBackup: new Date().toISOString()
+            };
+            
+            saveDataToStorage();
+        }
+
+        // ניהול מעבר בין דפים
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                document.querySelectorAll('.nav-menu a').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.add('hidden');
+                });
+                
+                const pageId = this.getAttribute('data-page');
+                document.getElementById(pageId).classList.remove('hidden');
+                document.getElementById('page-title').textContent = this.textContent.trim();
+                
+                currentPage = pageId;
+                loadPageData(pageId);
+            });
+        });
+
+        // טעינת נתוני דף
+        function loadPageData(pageId) {
+            switch(pageId) {
+                case 'dashboard': loadDashboard(); break;
+                case 'inventory': loadInventory(); break;
+                case 'spare-parts': loadSpareParts(); break;
+                case 'orders': loadOrders(); break;
+                case 'suppliers': loadSuppliers(); break;
+                case 'reports': loadReports(); break;
+            }
+        }
+
+        // טעינת דשבורד
+        function loadDashboard() {
+            document.getElementById('inventory-count').textContent = systemData.inventory.length;
+            document.getElementById('spare-parts-count').textContent = systemData.spareParts.length;
+            document.getElementById('orders-count').textContent = systemData.orders.filter(o => o.status === 'ממתין לליקוט').length;
+            document.getElementById('alerts-count').textContent = systemData.alerts.length;
+            
+            // חישוב סטטיסטיקות
+            const stats = {};
+            systemData.inventory.forEach(item => {
+                if (!stats[item.category]) {
+                    stats[item.category] = { count: 0, quantity: 0, value: 0 };
+                }
+                stats[item.category].count++;
+                stats[item.category].quantity += item.quantity;
+                stats[item.category].value += item.quantity * (item.price || 0);
+            });
+            
+            const tbody = document.getElementById('stats-table-body');
+            tbody.innerHTML = '';
+            
+            Object.entries(stats).forEach(([category, data]) => {
+                const categoryName = getCategoryName(category);
+                const row = `
+                <tr>
+                    <td><span class="category-badge category-${category}">${categoryName}</span></td>
+                    <td>${data.count}</td>
+                    <td>${data.quantity}</td>
+                    <td>₪${data.value.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-small btn-info" onclick="exportCategoryToExcel('${category}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // טעינת מלאי
+        function loadInventory() {
+            const tbody = document.getElementById('inventory-table-body');
+            tbody.innerHTML = '';
+            
+            systemData.inventory.forEach(item => {
+                const statusClass = getStatusClass(item.status);
+                const categoryName = getCategoryName(item.category);
+                const notesPreview = item.notes ? item.notes.substring(0, 30) + '...' : 'אין הערות';
+                
+                const row = `
+                <tr>
+                    <td>
+                        ${item.image ? 
+                            `<img src="${item.image}" alt="${item.name}" class="item-image" onclick="showImageModal('${item.image}')">` : 
+                            '<i class="fas fa-box" style="font-size: 24px; color: #ccc;"></i>'
+                        }
+                    </td>
+                    <td>${item.code}</td>
+                    <td>${item.name}</td>
+                    <td><span class="category-badge category-${item.category}">${categoryName}</span></td>
+                    <td>${item.quantity}</td>
+                    <td>${item.location}</td>
+                    <td class="notes-preview" onclick="showNotesModal('inventory', ${item.id})" title="${item.notes || ''}">
+                        ${notesPreview}
+                    </td>
+                    <td><span class="status ${statusClass}">${item.status}</span></td>
+                    <td class="no-print">
+                        <div class="table-actions">
+                            <button class="btn btn-small" onclick="editItem('inventory', ${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteItem('inventory', ${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // טעינת חלקי חילוף
+        function loadSpareParts() {
+            // תצוגת רשת
+            const grid = document.getElementById('spare-parts-grid');
+            grid.innerHTML = '';
+            
+            systemData.spareParts.forEach(part => {
+                const card = `
+                <div class="spare-part-card">
+                    ${part.image ? 
+                        `<img src="${part.image}" alt="${part.name}" class="spare-part-image" onclick="showImageModal('${part.image}')">` : 
+                        '<div style="height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 5px; margin-bottom: 15px;"><i class="fas fa-cog fa-3x" style="color: #ccc;"></i></div>'
+                    }
+                    <h4>${part.name}</h4>
+                    <p><strong>מספר חלק:</strong> ${part.partNumber}</p>
+                    <p><strong>דגמים מתאימים:</strong> ${part.compatibleModels}</p>
+                    <p><strong>כמות:</strong> ${part.quantity} יחידות</p>
+                    <p><strong>מחיר:</strong> ₪${part.price.toFixed(2)}</p>
+                    <div class="table-actions" style="margin-top: 15px;">
+                        <button class="btn btn-small" onclick="editItem('spareParts', ${part.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-small btn-danger" onclick="deleteItem('spareParts', ${part.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+                grid.innerHTML += card;
+            });
+            
+            // תצוגת טבלה
+            const tbody = document.getElementById('spare-parts-table-body');
+            tbody.innerHTML = '';
+            
+            systemData.spareParts.forEach(part => {
+                const notesPreview = part.notes ? part.notes.substring(0, 30) + '...' : 'אין הערות';
+                const row = `
+                <tr>
+                    <td>
+                        ${part.image ? 
+                            `<img src="${part.image}" alt="${part.name}" class="item-image" onclick="showImageModal('${part.image}')">` : 
+                            '<i class="fas fa-cog" style="font-size: 24px; color: #ccc;"></i>'
+                        }
+                    </td>
+                    <td>${part.partNumber}</td>
+                    <td>${part.description}</td>
+                    <td>${part.compatibleModels}</td>
+                    <td>${part.quantity}</td>
+                    <td>₪${part.price.toFixed(2)}</td>
+                    <td class="notes-preview" onclick="showNotesModal('spareParts', ${part.id})" title="${part.notes || ''}">
+                        ${notesPreview}
+                    </td>
+                    <td class="no-print">
+                        <div class="table-actions">
+                            <button class="btn btn-small" onclick="editItem('spareParts', ${part.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteItem('spareParts', ${part.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // טעינת הזמנות
+        function loadOrders() {
+            const tbody = document.getElementById('orders-table-body');
+            tbody.innerHTML = '';
+            
+            systemData.orders.forEach(order => {
+                const statusClass = getStatusClass(order.status);
+                const notesPreview = order.notes ? order.notes.substring(0, 30) + '...' : 'אין הערות';
+                
+                const row = `
+                <tr>
+                    <td>${order.orderNumber}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.date}</td>
+                    <td>${order.items.join(', ')}</td>
+                    <td>₪${order.totalAmount.toFixed(2)}</td>
+                    <td><span class="status ${statusClass}">${order.status}</span></td>
+                    <td class="notes-preview" onclick="showNotesModal('orders', ${order.id})" title="${order.notes || ''}">
+                        ${notesPreview}
+                    </td>
+                    <td class="no-print">
+                        <div class="table-actions">
+                            <button class="btn btn-small" onclick="editItem('orders', ${order.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteItem('orders', ${order.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // טעינת ספקים
+        function loadSuppliers() {
+            const tbody = document.getElementById('suppliers-table-body');
+            tbody.innerHTML = '';
+            
+            systemData.suppliers.forEach(supplier => {
+                const statusClass = supplier.status === 'פעיל' ? 'in-progress' : 'pending';
+                const categoryName = getCategoryName(supplier.category);
+                const notesPreview = supplier.notes ? supplier.notes.substring(0, 30) + '...' : 'אין הערות';
+                
+                const row = `
+                <tr>
+                    <td>${supplier.code}</td>
+                    <td>${supplier.name}</td>
+                    <td><span class="category-badge category-${supplier.category}">${categoryName}</span></td>
+                    <td>${supplier.phone}</td>
+                    <td>${supplier.email}</td>
+                    <td class="notes-preview" onclick="showNotesModal('suppliers', ${supplier.id})" title="${supplier.notes || ''}">
+                        ${notesPreview}
+                    </td>
+                    <td><span class="status ${statusClass}">${supplier.status}</span></td>
+                    <td class="no-print">
+                        <div class="table-actions">
+                            <button class="btn btn-small" onclick="editItem('suppliers', ${supplier.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteItem('suppliers', ${supplier.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // פונקציות עזר
+        function getCategoryName(category) {
+            const categories = {
+                'electronics': 'אלקטרוניקה',
+                'tools': 'כלי עבודה',
+                'building': 'חומרי בניין',
+                'toys': 'צעצועים',
+                'clothing': 'ביגוד',
+                'spare-parts': 'חלקי חילוף'
+            };
+            return categories[category] || category;
+        }
+
+        function getStatusClass(status) {
+            if (status === 'במלאי' || status === 'פעיל' || status === 'הושלם') return 'completed';
+            if (status === 'רמה נמוכה' || status === 'ממתין לאישור' || status === 'לא פעיל') return 'pending';
+            if (status === 'אזל המלאי') return 'pending';
+            if (status === 'בתהליך ליקוט' || status === 'בתהליך אריזה') return 'in-progress';
+            return 'pending';
+        }
+
+        // הצגת מודל הוספה/עריכה
+        function showAddModal(type) {
+            currentEditType = type;
+            currentEditId = null;
+            
+            const modal = document.getElementById('add-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            
+            let titleText = '';
+            let formHtml = '';
+            
+            switch(type) {
+                case 'inventory':
+                    titleText = 'הוספת פריט מלאי חדש';
+                    formHtml = getInventoryForm();
+                    break;
+                case 'spare-part':
+                    titleText = 'הוספת חלק חילוף חדש';
+                    formHtml = getSparePartForm();
+                    break;
+                case 'order':
+                    titleText = 'יצירת הזמנה חדשה';
+                    formHtml = getOrderForm();
+                    break;
+                case 'supplier':
+                    titleText = 'הוספת ספק חדש';
+                    formHtml = getSupplierForm();
+                    break;
+            }
+            
+            title.textContent = titleText;
+            body.innerHTML = formHtml;
+            modal.style.display = 'flex';
+        }
+
+        function editItem(type, id) {
+            currentEditType = type;
+            currentEditId = id;
+            
+            const modal = document.getElementById('add-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            
+            let item, titleText, formHtml;
+            
+            switch(type) {
+                case 'inventory':
+                    item = systemData.inventory.find(i => i.id === id);
+                    titleText = 'עריכת פריט מלאי';
+                    formHtml = getInventoryForm(item);
+                    break;
+                case 'spareParts':
+                    item = systemData.spareParts.find(i => i.id === id);
+                    titleText = 'עריכת חלק חילוף';
+                    formHtml = getSparePartForm(item);
+                    break;
+                case 'orders':
+                    item = systemData.orders.find(i => i.id === id);
+                    titleText = 'עריכת הזמנה';
+                    formHtml = getOrderForm(item);
+                    break;
+                case 'suppliers':
+                    item = systemData.suppliers.find(i => i.id === id);
+                    titleText = 'עריכת ספק';
+                    formHtml = getSupplierForm(item);
+                    break;
+            }
+            
+            title.textContent = titleText;
+            body.innerHTML = formHtml;
+            modal.style.display = 'flex';
+        }
+
+        // טפסים
+        function getInventoryForm(item = null) {
+            const categories = [
+                { value: 'electronics', label: 'אלקטרוניקה' },
+                { value: 'tools', label: 'כלי עבודה' },
+                { value: 'building', label: 'חומרי בניין' },
+                { value: 'toys', label: 'צעצועים' },
+                { value: 'clothing', label: 'ביגוד' },
+                { value: 'spare-parts', label: 'חלקי חילוף' }
+            ];
+            
+            const statuses = [
+                { value: 'במלאי', label: 'במלאי' },
+                { value: 'רמה נמוכה', label: 'רמה נמוכה' },
+                { value: 'אזל המלאי', label: 'אזל המלאי' }
+            ];
+            
+            let imagePreview = '';
+            if (item && item.image) {
+                imagePreview = `
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <img src="${item.image}" alt="תצוגה מקדימה" class="image-preview" id="image-preview">
+                    </div>
+                `;
+            }
+            
+            return `
+                <form onsubmit="return false;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="item-code">קוד פריט *</label>
+                            <input type="text" id="item-code" class="form-control" value="${item ? item.code : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="item-name">שם פריט *</label>
+                            <input type="text" id="item-name" class="form-control" value="${item ? item.name : ''}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="item-category">קטגוריה *</label>
+                            <select id="item-category" class="form-control" required>
+                                <option value="">בחר קטגוריה</option>
+                                ${categories.map(cat => 
+                                    `<option value="${cat.value}" ${item && item.category === cat.value ? 'selected' : ''}>${cat.label}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="item-quantity">כמות *</label>
+                            <input type="number" id="item-quantity" class="form-control" value="${item ? item.quantity : '0'}" required min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="item-location">מיקום במחסן *</label>
+                            <input type="text" id="item-location" class="form-control" value="${item ? item.location : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="item-price">מחיר (₪)</label>
+                            <input type="number" id="item-price" class="form-control" value="${item ? item.price : '0'}" min="0" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="item-image">תמונה</label>
+                        <div class="image-upload" onclick="document.getElementById('image-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>לחץ להעלאת תמונה</p>
+                            <input type="file" id="image-input" accept="image/*" style="display: none" onchange="handleImageUpload(event)">
+                        </div>
+                        ${imagePreview}
+                        <input type="hidden" id="item-image-url" value="${item ? item.image : ''}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="item-notes">הערות</label>
+                        <textarea id="item-notes" class="form-control" rows="3">${item ? item.notes : ''}</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="item-status">סטטוס</label>
+                        <select id="item-status" class="form-control">
+                            ${statuses.map(status => 
+                                `<option value="${status.value}" ${item && item.status === status.value ? 'selected' : ''}>${status.label}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="text-align: left; margin-top: 30px;">
+                        <button class="btn btn-success" onclick="saveItem('inventory')">
+                            ${item ? 'עדכן פריט' : 'הוסף פריט'}
+                        </button>
+                        <button class="btn" onclick="closeModal()" style="margin-right: 10px;">ביטול</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function getSparePartForm(item = null) {
+            return `
+                <form onsubmit="return false;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="part-number">מספר חלק *</label>
+                            <input type="text" id="part-number" class="form-control" value="${item ? item.partNumber : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="part-name">שם חלק *</label>
+                            <input type="text" id="part-name" class="form-control" value="${item ? item.name : ''}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="part-description">תיאור *</label>
+                        <textarea id="part-description" class="form-control" rows="2" required>${item ? item.description : ''}</textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="part-models">דגמים מתאימים</label>
+                            <input type="text" id="part-models" class="form-control" value="${item ? item.compatibleModels : ''}" placeholder="לדוגמה: Model X, Model Y">
+                        </div>
+                        <div class="form-group">
+                            <label for="part-quantity">כמות *</label>
+                            <input type="number" id="part-quantity" class="form-control" value="${item ? item.quantity : '0'}" required min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="part-price">מחיר (₪) *</label>
+                            <input type="number" id="part-price" class="form-control" value="${item ? item.price : '0'}" required min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="part-status">סטטוס</label>
+                            <select id="part-status" class="form-control">
+                                <option value="במלאי" ${item && item.status === 'במלאי' ? 'selected' : ''}>במלאי</option>
+                                <option value="רמה נמוכה" ${item && item.status === 'רמה נמוכה' ? 'selected' : ''}>רמה נמוכה</option>
+                                <option value="אזל המלאי" ${item && item.status === 'אזל המלאי' ? 'selected' : ''}>אזל המלאי</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="part-image">תמונה</label>
+                        <div class="image-upload" onclick="document.getElementById('part-image-input').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>לחץ להעלאת תמונה</p>
+                            <input type="file" id="part-image-input" accept="image/*" style="display: none" onchange="handlePartImageUpload(event)">
+                        </div>
+                        ${item && item.image ? `
+                            <div style="text-align: center; margin-top: 15px;">
+                                <img src="${item.image}" alt="תצוגה מקדימה" class="image-preview" id="part-image-preview">
+                            </div>
+                        ` : ''}
+                        <input type="hidden" id="part-image-url" value="${item ? item.image : ''}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="part-notes">הערות</label>
+                        <textarea id="part-notes" class="form-control" rows="3">${item ? item.notes : ''}</textarea>
+                    </div>
+                    
+                    <div class="form-group" style="text-align: left; margin-top: 30px;">
+                        <button class="btn btn-success" onclick="saveItem('spareParts')">
+                            ${item ? 'עדכן חלק' : 'הוסף חלק'}
+                        </button>
+                        <button class="btn" onclick="closeModal()" style="margin-right: 10px;">ביטול</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function getOrderForm(item = null) {
+            return `
+                <form onsubmit="return false;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="order-number">מספר הזמנה *</label>
+                            <input type="text" id="order-number" class="form-control" value="${item ? item.orderNumber : 'ORD-' + new Date().getFullYear() + '-' + (systemData.orders.length + 1).toString().padStart(3, '0')}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="order-customer">לקוח *</label>
+                            <input type="text" id="order-customer" class="form-control" value="${item ? item.customer : ''}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="order-date">תאריך *</label>
+                            <input type="date" id="order-date" class="form-control" value="${item ? item.date : new Date().toISOString().split('T')[0]}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="order-amount">סכום (₪) *</label>
+                            <input type="number" id="order-amount" class="form-control" value="${item ? item.totalAmount : '0'}" required min="0" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="order-items">פריטים (מופרדים בפסיק)</label>
+                        <input type="text" id="order-items" class="form-control" value="${item ? item.items.join(', ') : ''}" placeholder="לדוגמה: ELEC-001, TOOL-012">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="order-status">סטטוס</label>
+                            <select id="order-status" class="form-control">
+                                <option value="ממתין לליקוט" ${item && item.status === 'ממתין לליקוט' ? 'selected' : ''}>ממתין לליקוט</option>
+                                <option value="בתהליך ליקוט" ${item && item.status === 'בתהליך ליקוט' ? 'selected' : ''}>בתהליך ליקוט</option>
+                                <option value="מוכן למשלוח" ${item && item.status === 'מוכן למשלוח' ? 'selected' : ''}>מוכן למשלוח</option>
+                                <option value="הושלם" ${item && item.status === 'הושלם' ? 'selected' : ''}>הושלם</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="order-notes">הערות</label>
+                        <textarea id="order-notes" class="form-control" rows="3">${item ? item.notes : ''}</textarea>
+                    </div>
+                    
+                    <div class="form-group" style="text-align: left; margin-top: 30px;">
+                        <button class="btn btn-success" onclick="saveItem('orders')">
+                            ${item ? 'עדכן הזמנה' : 'צור הזמנה'}
+                        </button>
+                        <button class="btn" onclick="closeModal()" style="margin-right: 10px;">ביטול</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function getSupplierForm(item = null) {
+            const categories = [
+                { value: 'electronics', label: 'אלקטרוניקה' },
+                { value: 'tools', label: 'כלי עבודה' },
+                { value: 'building', label: 'חומרי בניין' },
+                { value: 'toys', label: 'צעצועים' },
+                { value: 'clothing', label: 'ביגוד' },
+                { value: 'spare-parts', label: 'חלקי חילוף' },
+                { value: 'general', label: 'כללי' }
+            ];
+            
+            return `
+                <form onsubmit="return false;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="supplier-code">קוד ספק *</label>
+                            <input type="text" id="supplier-code" class="form-control" value="${item ? item.code : 'SUP-' + (systemData.suppliers.length + 1).toString().padStart(3, '0')}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supplier-name">שם ספק *</label>
+                            <input type="text" id="supplier-name" class="form-control" value="${item ? item.name : ''}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="supplier-category">קטגוריה</label>
+                            <select id="supplier-category" class="form-control">
+                                <option value="">בחר קטגוריה</option>
+                                ${categories.map(cat => 
+                                    `<option value="${cat.value}" ${item && item.category === cat.value ? 'selected' : ''}>${cat.label}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="supplier-phone">טלפון *</label>
+                            <input type="tel" id="supplier-phone" class="form-control" value="${item ? item.phone : ''}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="supplier-email">אימייל</label>
+                            <input type="email" id="supplier-email" class="form-control" value="${item ? item.email : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="supplier-address">כתובת</label>
+                            <input type="text" id="supplier-address" class="form-control" value="${item ? item.address : ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="supplier-status">סטטוס</label>
+                            <select id="supplier-status" class="form-control">
+                                <option value="פעיל" ${item && item.status === 'פעיל' ? 'selected' : ''}>פעיל</option>
+                                <option value="לא פעיל" ${item && item.status === 'לא פעיל' ? 'selected' : ''}>לא פעיל</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="supplier-notes">הערות</label>
+                        <textarea id="supplier-notes" class="form-control" rows="3">${item ? item.notes : ''}</textarea>
+                    </div>
+                    
+                    <div class="form-group" style="text-align: left; margin-top: 30px;">
+                        <button class="btn btn-success" onclick="saveItem('suppliers')">
+                            ${item ? 'עדכן ספק' : 'הוסף ספק'}
+                        </button>
+                        <button class="btn" onclick="closeModal()" style="margin-right: 10px;">ביטול</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        // שמירת פריט
+        function saveItem(type) {
+            let item, id;
+            
+            switch(type) {
+                case 'inventory':
+                    const code = document.getElementById('item-code').value;
+                    const name = document.getElementById('item-name').value;
+                    const category = document.getElementById('item-category').value;
+                    const quantity = parseInt(document.getElementById('item-quantity').value);
+                    const location = document.getElementById('item-location').value;
+                    const price = parseFloat(document.getElementById('item-price').value) || 0;
+                    const image = document.getElementById('item-image-url').value;
+                    const notes = document.getElementById('item-notes').value;
+                    const status = document.getElementById('item-status').value;
+                    
+                    // בדיקות תקינות
+                    if (!code || !name || !category || isNaN(quantity) || !location) {
+                        showAlert('נא למלא את כל השדות המסומנים ב-*', 'warning');
+                        return;
+                    }
+                    
+                    item = {
+                        code,
+                        name,
+                        category,
+                        quantity,
+                        location,
+                        price,
+                        image,
+                        notes,
+                        status,
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    if (currentEditId) {
+                        // עדכון פריט קיים
+                        id = currentEditId;
+                        const index = systemData.inventory.findIndex(i => i.id === id);
+                        if (index !== -1) {
+                            item.id = id;
+                            systemData.inventory[index] = item;
+                        }
+                    } else {
+                        // הוספת פריט חדש
+                        id = systemData.inventory.length > 0 ? Math.max(...systemData.inventory.map(i => i.id)) + 1 : 1;
+                        item.id = id;
+                        systemData.inventory.push(item);
+                    }
+                    break;
+                    
+                case 'spareParts':
+                    const partNumber = document.getElementById('part-number').value;
+                    const partName = document.getElementById('part-name').value;
+                    const description = document.getElementById('part-description').value;
+                    const compatibleModels = document.getElementById('part-models').value;
+                    const partQuantity = parseInt(document.getElementById('part-quantity').value);
+                    const partPrice = parseFloat(document.getElementById('part-price').value) || 0;
+                    const partImage = document.getElementById('part-image-url').value;
+                    const partNotes = document.getElementById('part-notes').value;
+                    const partStatus = document.getElementById('part-status').value;
+                    
+                    if (!partNumber || !partName || !description || isNaN(partQuantity) || isNaN(partPrice)) {
+                        showAlert('נא למלא את כל השדות המסומנים ב-*', 'warning');
+                        return;
+                    }
+                    
+                    item = {
+                        partNumber,
+                        name: partName,
+                        description,
+                        compatibleModels,
+                        quantity: partQuantity,
+                        price: partPrice,
+                        image: partImage,
+                        notes: partNotes,
+                        status: partStatus,
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    if (currentEditId) {
+                        id = currentEditId;
+                        const index = systemData.spareParts.findIndex(i => i.id === id);
+                        if (index !== -1) {
+                            item.id = id;
+                            systemData.spareParts[index] = item;
+                        }
+                    } else {
+                        id = systemData.spareParts.length > 0 ? Math.max(...systemData.spareParts.map(i => i.id)) + 1 : 1;
+                        item.id = id;
+                        systemData.spareParts.push(item);
+                    }
+                    break;
+                    
+                case 'orders':
+                    const orderNumber = document.getElementById('order-number').value;
+                    const customer = document.getElementById('order-customer').value;
+                    const date = document.getElementById('order-date').value;
+                    const items = document.getElementById('order-items').value.split(',').map(i => i.trim()).filter(i => i);
+                    const totalAmount = parseFloat(document.getElementById('order-amount').value) || 0;
+                    const orderStatus = document.getElementById('order-status').value;
+                    const orderNotes = document.getElementById('order-notes').value;
+                    
+                    if (!orderNumber || !customer || !date || isNaN(totalAmount)) {
+                        showAlert('נא למלא את כל השדות המסומנים ב-*', 'warning');
+                        return;
+                    }
+                    
+                    item = {
+                        orderNumber,
+                        customer,
+                        date,
+                        items,
+                        totalAmount,
+                        status: orderStatus,
+                        notes: orderNotes,
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    if (currentEditId) {
+                        id = currentEditId;
+                        const index = systemData.orders.findIndex(i => i.id === id);
+                        if (index !== -1) {
+                            item.id = id;
+                            systemData.orders[index] = item;
+                        }
+                    } else {
+                        id = systemData.orders.length > 0 ? Math.max(...systemData.orders.map(i => i.id)) + 1 : 1;
+                        item.id = id;
+                        systemData.orders.push(item);
+                    }
+                    break;
+                    
+                case 'suppliers':
+                    const supplierCode = document.getElementById('supplier-code').value;
+                    const supplierName = document.getElementById('supplier-name').value;
+                    const supplierCategory = document.getElementById('supplier-category').value;
+                    const phone = document.getElementById('supplier-phone').value;
+                    const email = document.getElementById('supplier-email').value;
+                    const address = document.getElementById('supplier-address').value;
+                    const supplierStatus = document.getElementById('supplier-status').value;
+                    const supplierNotes = document.getElementById('supplier-notes').value;
+                    
+                    if (!supplierCode || !supplierName || !phone) {
+                        showAlert('נא למלא את כל השדות המסומנים ב-*', 'warning');
+                        return;
+                    }
+                    
+                    item = {
+                        code: supplierCode,
+                        name: supplierName,
+                        category: supplierCategory,
+                        phone,
+                        email,
+                        address,
+                        status: supplierStatus,
+                        notes: supplierNotes,
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    if (currentEditId) {
+                        id = currentEditId;
+                        const index = systemData.suppliers.findIndex(i => i.id === id);
+                        if (index !== -1) {
+                            item.id = id;
+                            systemData.suppliers[index] = item;
+                        }
+                    } else {
+                        id = systemData.suppliers.length > 0 ? Math.max(...systemData.suppliers.map(i => i.id)) + 1 : 1;
+                        item.id = id;
+                        systemData.suppliers.push(item);
+                    }
+                    break;
+            }
+            
+            saveDataToStorage();
+            closeModal();
+            loadPageData(currentPage);
+            updateDashboard();
+            
+            showAlert(currentEditId ? 'הפריט עודכן בהצלחה' : 'הפריט נוסף בהצלחה', 'success');
+        }
+
+        // מחיקת פריט
+        function deleteItem(type, id) {
+            if (!confirm('האם אתה בטוח שברצונך למחוק פריט זה?')) {
+                return;
+            }
+            
+            switch(type) {
+                case 'inventory':
+                    systemData.inventory = systemData.inventory.filter(item => item.id !== id);
+                    break;
+                case 'spareParts':
+                    systemData.spareParts = systemData.spareParts.filter(item => item.id !== id);
+                    break;
+                case 'orders':
+                    systemData.orders = systemData.orders.filter(item => item.id !== id);
+                    break;
+                case 'suppliers':
+                    systemData.suppliers = systemData.suppliers.filter(item => item.id !== id);
+                    break;
+            }
+            
+            saveDataToStorage();
+            loadPageData(currentPage);
+            updateDashboard();
+            
+            showAlert('הפריט נמחק בהצלחה', 'success');
+        }
+
+        // ניהול תמונות
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // בדיקת גודל הקובץ (מקסימום 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('גודל הקובץ גדול מדי. מקסימום 5MB.', 'warning');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // שמירת התמונה בזיכרון המקומי כ-Data URL
+                const imageData = e.target.result;
+                document.getElementById('item-image-url').value = imageData;
+                
+                // הצגת תצוגה מקדימה
+                const preview = document.getElementById('image-preview') || createImagePreview();
+                preview.src = imageData;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handlePartImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('גודל הקובץ גדול מדי. מקסימום 5MB.', 'warning');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageData = e.target.result;
+                document.getElementById('part-image-url').value = imageData;
+                
+                let preview = document.getElementById('part-image-preview');
+                if (!preview) {
+                    preview = document.createElement('img');
+                    preview.id = 'part-image-preview';
+                    preview.className = 'image-preview';
+                    document.querySelector('#part-image-input').parentNode.appendChild(preview);
+                }
+                preview.src = imageData;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function createImagePreview() {
+            const img = document.createElement('img');
+            img.id = 'image-preview';
+            img.className = 'image-preview';
+            img.style.display = 'block';
+            img.style.margin = '10px auto';
+            document.querySelector('#image-input').parentNode.appendChild(img);
+            return img;
+        }
+
+        // הצגת תמונה מוגדלת
+        function showImageModal(imageUrl) {
+            if (!imageUrl) return;
+            
+            document.getElementById('modal-image').src = imageUrl;
+            document.getElementById('image-modal').style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').style.display = 'none';
+        }
+
+        // ניהול הערות
+        function showNotesModal(type, id) {
+            currentEditType = type;
+            currentEditId = id;
+            
+            let item, notes = '';
+            
+            switch(type) {
+                case 'inventory':
+                    item = systemData.inventory.find(i => i.id === id);
+                    break;
+                case 'spareParts':
+                    item = systemData.spareParts.find(i => i.id === id);
+                    break;
+                case 'orders':
+                    item = systemData.orders.find(i => i.id === id);
+                    break;
+                case 'suppliers':
+                    item = systemData.suppliers.find(i => i.id === id);
+                    break;
+            }
+            
+            if (item) {
+                notes = item.notes || '';
+            }
+            
+            document.getElementById('notes-content').value = notes;
+            document.getElementById('notes-modal-title').textContent = 'הערות ל' + (item ? item.name || item.code || 'פריט' : 'פריט');
+            document.getElementById('notes-modal').style.display = 'flex';
+        }
+
+        function closeNotesModal() {
+            document.getElementById('notes-modal').style.display = 'none';
+        }
+
+        function saveNotes() {
+            const notes = document.getElementById('notes-content').value;
+            let item;
+            
+            switch(currentEditType) {
+                case 'inventory':
+                    item = systemData.inventory.find(i => i.id === currentEditId);
+                    break;
+                case 'spareParts':
+                    item = systemData.spareParts.find(i => i.id === currentEditId);
+                    break;
+                case 'orders':
+                    item = systemData.orders.find(i => i.id === currentEditId);
+                    break;
+                case 'suppliers':
+                    item = systemData.suppliers.find(i => i.id === currentEditId);
+                    break;
+            }
+            
+            if (item) {
+                item.notes = notes;
+                item.lastUpdated = new Date().toISOString().split('T')[0];
+                saveDataToStorage();
+                loadPageData(currentPage);
+                showAlert('ההערות נשמרו בהצלחה', 'success');
+            }
+            
+            closeNotesModal();
+        }
+
+        // ייצוא ל-Excel
+        async function exportToExcel(data, filename, includeImages = true, includeNotes = true) {
+            try {
+                const XLSX = await loadXLSX();
+                
+                // המרת הנתונים לפורמט Excel
+                const wsData = [];
+                
+                // כותרות
+                const headers = [];
+                if (data.length > 0) {
+                    const firstItem = data[0];
+                    Object.keys(firstItem).forEach(key => {
+                        if (key !== 'id' && (includeNotes || key !== 'notes') && (includeImages || key !== 'image')) {
+                            headers.push(key);
+                        }
+                    });
+                    wsData.push(headers);
+                    
+                    // נתונים
+                    data.forEach(item => {
+                        const row = [];
+                        headers.forEach(header => {
+                            let value = item[header];
+                            
+                            if (header === 'category') {
+                                value = getCategoryName(value);
+                            } else if (header === 'image' && value && includeImages) {
+                                value = 'תמונה זמינה';
+                            } else if (header === 'notes' && value && includeNotes) {
+                                value = value.substring(0, 100) + (value.length > 100 ? '...' : '');
+                            } else if (typeof value === 'object') {
+                                value = JSON.stringify(value);
+                            }
+                            
+                            row.push(value || '');
+                        });
+                        wsData.push(row);
+                    });
+                }
+                
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "נתונים");
+                
+                // ייצוא הקובץ
+                XLSX.writeFile(wb, `${filename}.xlsx`);
+                showAlert('הקובץ יוצא בהצלחה', 'success');
+                
+            } catch (error) {
+                console.error('שגיאה בייצוא:', error);
+                showAlert('שגיאה בייצוא הקובץ', 'warning');
+            }
+        }
+
+        // פונקציות ייצוא ספציפיות
+        function exportInventoryToExcel() {
+            exportToExcel(systemData.inventory, 'מלאי_WMS', true, true);
+        }
+
+        function exportSparePartsToExcel() {
+            exportToExcel(systemData.spareParts, 'חלקי_חילוף_WMS', true, true);
+        }
+
+        function exportOrdersToExcel() {
+            exportToExcel(systemData.orders, 'הזמנות_WMS', false, true);
+        }
+
+        function exportSuppliersToExcel() {
+            exportToExcel(systemData.suppliers, 'ספקים_WMS', false, true);
+        }
+
+        function exportAllToExcel() {
+            // יצירת חוברת עבודה עם מספר גיליונות
+            Promise.all([
+                loadXLSX(),
+                Promise.resolve()
+            ]).then(([XLSX]) => {
+                const wb = XLSX.utils.book_new();
+                
+                // גיליון מלאי
+                if (systemData.inventory.length > 0) {
+                    const invData = systemData.inventory.map(item => ({
+                        'קוד פריט': item.code,
+                        'שם פריט': item.name,
+                        'קטגוריה': getCategoryName(item.category),
+                        'כמות': item.quantity,
+                        'מיקום': item.location,
+                        'מחיר': item.price,
+                        'סטטוס': item.status,
+                        'הערות': item.notes || '',
+                        'תמונה': item.image ? 'כן' : 'לא',
+                        'עדכון אחרון': item.lastUpdated
+                    }));
+                    const ws1 = XLSX.utils.json_to_sheet(invData);
+                    XLSX.utils.book_append_sheet(wb, ws1, "מלאי");
+                }
+                
+                // גיליון חלקי חילוף
+                if (systemData.spareParts.length > 0) {
+                    const spData = systemData.spareParts.map(item => ({
+                        'מספר חלק': item.partNumber,
+                        'שם חלק': item.name,
+                        'תיאור': item.description,
+                        'דגמים מתאימים': item.compatibleModels,
+                        'כמות': item.quantity,
+                        'מחיר': item.price,
+                        'סטטוס': item.status,
+                        'הערות': item.notes || '',
+                        'תמונה': item.image ? 'כן' : 'לא',
+                        'עדכון אחרון': item.lastUpdated
+                    }));
+                    const ws2 = XLSX.utils.json_to_sheet(spData);
+                    XLSX.utils.book_append_sheet(wb, ws2, "חלקי חילוף");
+                }
+                
+                // גיליון הזמנות
+                if (systemData.orders.length > 0) {
+                    const ordData = systemData.orders.map(item => ({
+                        'מספר הזמנה': item.orderNumber,
+                        'לקוח': item.customer,
+                        'תאריך': item.date,
+                        'פריטים': item.items.join(', '),
+                        'סכום': item.totalAmount,
+                        'סטטוס': item.status,
+                        'הערות': item.notes || '',
+                        'עדכון אחרון': item.lastUpdated
+                    }));
+                    const ws3 = XLSX.utils.json_to_sheet(ordData);
+                    XLSX.utils.book_append_sheet(wb, ws3, "הזמנות");
+                }
+                
+                // גיליון ספקים
+                if (systemData.suppliers.length > 0) {
+                    const supData = systemData.suppliers.map(item => ({
+                        'קוד ספק': item.code,
+                        'שם ספק': item.name,
+                        'קטגוריה': getCategoryName(item.category),
+                        'טלפון': item.phone,
+                        'אימייל': item.email,
+                        'כתובת': item.address || '',
+                        'סטטוס': item.status,
+                        'הערות': item.notes || '',
+                        'עדכון אחרון': item.lastUpdated
+                    }));
+                    const ws4 = XLSX.utils.json_to_sheet(supData);
+                    XLSX.utils.book_append_sheet(wb, ws4, "ספקים");
+                }
+                
+                XLSX.writeFile(wb, `גיבוי_מלא_WMS_${new Date().toISOString().split('T')[0]}.xlsx`);
+                showAlert('כל הנתונים יוצאו בהצלחה לקובץ Excel', 'success');
+                
+            }).catch(error => {
+                console.error('שגיאה בייצוא:', error);
+                showAlert('שגיאה בייצוא הקובץ', 'warning');
+            });
+        }
+
+        function exportCategoryToExcel(category) {
+            const items = systemData.inventory.filter(item => item.category === category);
+            if (items.length === 0) {
+                showAlert('לא נמצאו פריטים בקטגוריה זו', 'info');
+                return;
+            }
+            
+            exportToExcel(items, `מלאי_${getCategoryName(category)}_WMS`, true, true);
+        }
+
+        function exportDashboardToExcel() {
+            const stats = [];
+            const categories = {};
+            
+            systemData.inventory.forEach(item => {
+                if (!categories[item.category]) {
+                    categories[item.category] = { count: 0, quantity: 0, value: 0 };
+                }
+                categories[item.category].count++;
+                categories[item.category].quantity += item.quantity;
+                categories[item.category].value += item.quantity * (item.price || 0);
+            });
+            
+            Object.entries(categories).forEach(([category, data]) => {
+                stats.push({
+                    'קטגוריה': getCategoryName(category),
+                    'מספר פריטים': data.count,
+                    'סה"כ כמות': data.quantity,
+                    'ערך משוער': data.value.toFixed(2)
+                });
+            });
+            
+            exportToExcel(stats, 'סטטיסטיקות_דשבורד_WMS', false, false);
+        }
+
+        // פונקציות נוספות
+        function showExportModal() {
+            document.getElementById('export-modal').style.display = 'flex';
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').style.display = 'none';
+        }
+
+        function performExport() {
+            const type = document.getElementById('export-data-type').value;
+            const includeImages = document.getElementById('export-with-images').value === 'yes';
+            const includeNotes = document.getElementById('export-with-notes').value === 'yes';
+            
+            switch(type) {
+                case 'inventory':
+                    exportInventoryToExcel();
+                    break;
+                case 'spare-parts':
+                    exportSparePartsToExcel();
+                    break;
+                case 'orders':
+                    exportOrdersToExcel();
+                    break;
+                case 'suppliers':
+                    exportSuppliersToExcel();
+                    break;
+                case 'all':
+                    exportAllToExcel();
+                    break;
+            }
+            
+            closeExportModal();
+        }
+
+        function customExport() {
+            const format = document.getElementById('export-format').value;
+            const includeImages = document.getElementById('include-images').value === 'yes';
+            const includeNotes = document.getElementById('include-notes').value === 'yes';
+            
+            if (format === 'excel') {
+                exportAllToExcel();
+            } else if (format === 'csv') {
+                exportToCSV(includeImages, includeNotes);
+            } else if (format === 'json') {
+                exportToJSON();
+            }
+        }
+
+        function exportToCSV(includeImages, includeNotes) {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // יצירת CSV לכל סוג נתונים
+            const dataTypes = [
+                { name: 'מלאי', data: systemData.inventory },
+                { name: 'חלקי חילוף', data: systemData.spareParts },
+                { name: 'הזמנות', data: systemData.orders },
+                { name: 'ספקים', data: systemData.suppliers }
+            ];
+            
+            dataTypes.forEach((type, index) => {
+                if (type.data.length > 0) {
+                    csvContent += `=== ${type.name} ===\n`;
+                    
+                    // כותרות
+                    const headers = Object.keys(type.data[0]).filter(key => 
+                        key !== 'id' && (includeNotes || key !== 'notes') && (includeImages || key !== 'image')
+                    );
+                    csvContent += headers.join(',') + '\n';
+                    
+                    // נתונים
+                    type.data.forEach(item => {
+                        const row = headers.map(header => {
+                            let value = item[header];
+                            if (typeof value === 'object') {
+                                value = JSON.stringify(value);
+                            }
+                            return `"${value || ''}"`;
+                        });
+                        csvContent += row.join(',') + '\n';
+                    });
+                    
+                    csvContent += '\n';
+                }
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `גיבוי_WMS_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showAlert('הקובץ CSV יוצא בהצלחה', 'success');
+        }
+
+        function exportToJSON() {
+            const dataStr = JSON.stringify(systemData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const link = document.createElement("a");
+            link.setAttribute("href", dataUri);
+            link.setAttribute("download", `גיבוי_WMS_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showAlert('הקובץ JSON יוצא בהצלחה', 'success');
+        }
+
+        // ניהול מנהל
+        function showManagerModal() {
+            document.getElementById('manager-name').value = systemData.managerSettings.name;
+            document.getElementById('manager-title').value = systemData.managerSettings.title;
+            document.getElementById('manager-modal').style.display = 'flex';
+        }
+
+        function closeManagerModal() {
+            document.getElementById('manager-modal').style.display = 'none';
+        }
+
+        function saveManagerSettings() {
+            const name = document.getElementById('manager-name').value;
+            const title = document.getElementById('manager-title').value;
+            
+            if (!name || !title) {
+                showAlert('נא למלא שם ותפקיד', 'warning');
+                return;
+            }
+            
+            systemData.managerSettings.name = name;
+            systemData.managerSettings.title = title;
+            systemData.managerSettings.initials = name.substring(0, 2);
+            
+            updateManagerDisplay();
+            saveDataToStorage();
+            closeManagerModal();
+            
+            showAlert('פרטי המנהל עודכנו בהצלחה', 'success');
+        }
+
+        function updateManagerDisplay() {
+            document.getElementById('user-name').textContent = 
+                `${systemData.managerSettings.name}, ${systemData.managerSettings.title}`;
+            document.getElementById('user-avatar').textContent = systemData.managerSettings.initials;
+        }
+
+        // איפוס נתונים
+        function showResetModal() {
+            document.getElementById('reset-modal').style.display = 'flex';
+        }
+
+        function closeResetModal() {
+            document.getElementById('reset-modal').style.display = 'none';
+        }
+
+        function resetAllData() {
+            if (confirm('אזהרה! פעולה זו תמחק את כל הנתונים במערכת. האם להמשיך?')) {
+                // שמירת הגדרות מנהל בלבד
+                const managerSettings = systemData.managerSettings;
+                
+                // איפוס כל הנתונים
+                systemData = {
+                    inventory: [],
+                    spareParts: [],
+                    orders: [],
+                    suppliers: [],
+                    alerts: [],
+                    managerSettings: managerSettings,
+                    lastBackup: new Date().toISOString()
+                };
+                
+                saveDataToStorage();
+                loadPageData(currentPage);
+                updateDashboard();
+                closeResetModal();
+                
+                showAlert('כל הנתונים אופסו בהצלחה', 'success');
+            }
+        }
+
+        // פונקציות שירות
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} custom-alert`;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '10000';
+            alertDiv.style.maxWidth = '400px';
+            alertDiv.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+            
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'warning') icon = 'exclamation-triangle';
+            
+            alertDiv.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <div>${message}</div>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        function closeModal() {
+            document.getElementById('add-modal').style.display = 'none';
+            currentEditId = null;
+            currentEditType = null;
+        }
+
+        function updateDashboard() {
+            loadDashboard();
+        }
+
+        // טעינת נתונים ראשונית
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromStorage();
+            
+            // הודעת ברכה
+            setTimeout(() => {
+                showAlert(`ברוך הבא ${systemData.managerSettings.name}! המערכת מוכנה לשימוש.`, 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
